@@ -86,13 +86,13 @@
     .chat-messages-container {
         overflow-y: auto;
         padding: 1rem;
-        background-color: #f0f2f5;
+        background: linear-gradient(180deg, #f5f5f5 0%, #e8e8e8 100%);
     }
 
     .chat-input-container {
         padding: 1rem;
-        border-top: 1px solid #dee2e6;
-        background-color: #f8f9fa;
+        border-top: 2px solid #B0C4DE;
+        background: linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%);
         position: sticky;
         bottom: 0;
     }
@@ -108,14 +108,19 @@
 
     .message.user {
         float: right;
-        background-color: #dcf8c6;
+        background: linear-gradient(135deg, #B0C4DE 0%, #4682B4 100%);
+        color: #000000;
         border-bottom-right-radius: 0.25rem;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .message.counselor {
         float: left;
-        background-color: white;
+        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        color: #ffffff;
         border-bottom-left-radius: 0.25rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     .message-content {
@@ -192,8 +197,8 @@
     }
 
     .message-input:focus {
-        box-shadow: none;
-        border-color: #198754;
+        box-shadow: 0 0 0 0.25rem rgba(70, 130, 180, 0.25);
+        border-color: #4682B4;
     }
 
     /* Clear float after messages */
@@ -218,7 +223,8 @@
     .prompt-recommendations {
         height: 100%;
         overflow: hidden;
-        background-color: #f8f9fa;
+        background: linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%);
+        border-left: 2px solid #B0C4DE;
     }
 
     .suggestion-list {
@@ -236,12 +242,16 @@
     }
 
     .suggestion-card .card {
-        border-left: 4px solid #6c757d;
+        border-left: 4px solid #B0C4DE;
+        background-color: #ffffff;
+        transition: all 0.3s ease;
     }
 
     .suggestion-card .card:hover {
-        border-left-color: #0d6efd;
-        background-color: #f0f7ff;
+        border-left-color: #4682B4;
+        background: linear-gradient(90deg, #ffffff 0%, #B0C4DE 100%);
+        transform: translateX(5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
 
     /* Animations for new suggestions */

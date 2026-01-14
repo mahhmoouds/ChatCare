@@ -1,0 +1,14 @@
+name = "chatcare"
+compatibility_date = "2024-01-01"
+
+[env.production]
+account_id = ""  # Add your Cloudflare account ID
+zone_id = ""     # Add your Cloudflare zone ID
+
+[build]
+command = "python manage.py collectstatic --noinput"
+
+[[env.production.routes]]
+pattern = "chatcare.yourdomain.com/*"
+zone_name = "yourdomain.com"
+

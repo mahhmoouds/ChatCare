@@ -23,12 +23,14 @@ from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-load_dotenv()
+load_dotenv(override=True)  # Add override=True to ensure it reloads
 
-# Initialize Groq API
+# Initialize Groq API - get key from environment
 groq_api_key = os.getenv("GROQ_API_KEY")
 if not groq_api_key:
-    groq_api_key = "gsk_NamlAyVEFhkxXjsN2lxdATpPGGXYZzY1Gx7v4BfN4TRLAhDq"  # Fallback API key (replace with your key)
+    logger.error("GROQ_API_KEY not found in environment variables")
+    raise ValueError("GROQ_API_KEY environment variable is required")
+logger.info("Using Groq API key from environment variables")
 
 # Dictionary to track which models are available/working
 AVAILABLE_MODELS = {
@@ -363,7 +365,7 @@ IMPORTANT: Make these suggestions clearly and strongly reflect the PERSONA's uni
                     default_suggestions = [
                         "How can I manage my anxiety?",
                         "I've been feeling down lately",
-                        "Help me with stress management", 
+                        "Help me with stress management",
                         "I need advice about my relationship",
                         "How do I deal with intrusive thoughts?"
                     ]
@@ -420,7 +422,7 @@ def send_message(request):
             # Get user's preferred model and parameters
             try:
                 preference, created = UserPreference.objects.get_or_create(user=request.user)
-                current_model = preference.preferred_model
+                current_model = "llama-3.1-8b-instant"  # Force use of this model
                 
                 # Get model configuration
                 model_config = get_model_config(current_model)
@@ -430,7 +432,7 @@ def send_message(request):
                 
                 logger.info(f"Using model {current_model} with config: {model_config}")
             except Exception as e:
-                current_model = "llama-3.3-70b-versatile"
+                current_model = "llama-3.1-8b-instant"
                 model_config = get_model_config(current_model)
                 logger.error(f"Error getting user preference: {str(e)}")
             
@@ -540,6 +542,13 @@ def send_message(request):
                 # Add current message
                 messages.append({"role": "user", "content": user_message})
                 
+                # Log the request details
+                logger.info(f"Making API request with model: {current_model}")
+                logger.info(f"System prompt: {system_prompt}")
+                logger.info(f"User message: {user_message}")
+                logger.info(f"Temperature: {preference.temperature}")
+                logger.info(f"Max tokens: {preference.max_tokens}")
+                
                 # Make API call with user's parameters
                 if preference.stream:
                     # Streaming response
@@ -579,42 +588,53 @@ def send_message(request):
                         response['X-Accel-Buffering'] = 'no'
                         return response
                     except Exception as e:
-                        # If streaming fails, try non-streaming as fallback
+                        # Log detailed streaming error
                         logger.error(f"Streaming error with model {current_model}: {str(e)}")
+                        logger.error(f"Error type: {type(e).__name__}")
+                        logger.error(f"Error details: {str(e)}")
                         # Continue to non-streaming approach
                         preference.stream = False
                 
                 # Non-streaming response
-                response = client.chat.completions.create(
-                    model=current_model,
-                    messages=messages,
-                    temperature=preference.temperature,
-                    max_tokens=min(preference.max_tokens, model_config["max_tokens"]),
-                    stream=False
-                )
-                
-                bot_message = response.choices[0].message.content
-                
-                # Clean and format the response
-                formatted_response = format_bot_response(bot_message)
-                
-                # Save bot message
-                bot_msg = Message.objects.create(
-                    user=request.user,
-                    content=formatted_response,
-                    is_bot=True
-                )
-                
-                return JsonResponse({
-                    'status': 'success',
-                    'message': formatted_response,
-                    'user_message': user_message
-                })
+                try:
+                    response = client.chat.completions.create(
+                        model=current_model,
+                        messages=messages,
+                        temperature=preference.temperature,
+                        max_tokens=min(preference.max_tokens, model_config["max_tokens"]),
+                        stream=False
+                    )
+                    
+                    bot_message = response.choices[0].message.content
+                    
+                    # Clean and format the response
+                    formatted_response = format_bot_response(bot_message)
+                    
+                    # Save bot message
+                    bot_msg = Message.objects.create(
+                        user=request.user,
+                        content=formatted_response,
+                        is_bot=True
+                    )
+                    
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': formatted_response,
+                        'user_message': user_message
+                    })
+                except Exception as e:
+                    # Log detailed non-streaming error
+                    logger.error(f"Non-streaming error with model {current_model}: {str(e)}")
+                    logger.error(f"Error type: {type(e).__name__}")
+                    logger.error(f"Error details: {str(e)}")
+                    raise  # Re-raise to be caught by outer try block
                 
             except Exception as e:
                 logger.error(f"Error getting response from model: {str(e)}")
+                logger.error(f"Error type: {type(e).__name__}")
+                logger.error(f"Error details: {str(e)}")
                 
-                error_message = f"I apologize, but I'm having trouble processing your request right now. Please try again with a shorter message or try later."
+                error_message = f"I apologize, but I'm having trouble processing your request right now. Please try again with a shorter message or try later. Error: {str(e)}"
                 error_msg = Message.objects.create(
                     user=request.user,
                     content=error_message,
